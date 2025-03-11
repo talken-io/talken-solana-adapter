@@ -1,0 +1,31 @@
+{
+  "name": "@talken/talken-adapter",
+  "version": "1.0.0",
+  "description": "Talken Wallet Adapter",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsup src/index.ts --format esm --dts --clean",
+    "dev": "npm run build -- --watch src",
+    "prepublishOnly": "npm run build"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@solana/wallet-standard-chains": "^1.1.0",
+    "@solana/wallet-standard-util": "^1.1.1",
+    "@wallet-standard/app": "^1.0.1",
+    "@wallet-standard/wallet": "^1.0.1",
+    "bs58": "^5.0.0"
+  },
+  "peerDependencies": {
+    "@solana/wallet-adapter-base": "^0.9.23",
+    "@solana/web3.js": "^1.78.4"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.2",
+    "typescript": "^5.2.2"
+  }
+}
