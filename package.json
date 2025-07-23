@@ -1,7 +1,7 @@
 {
-  "name": "@talken/talken-adapter",
-  "version": "1.0.0",
-  "description": "Talken Wallet Adapter",
+  "name": "@talken/talken-solana-adapter",
+  "version": "1.0.1",
+  "description": "Talken Solana Embedded Wallet Adapter",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "type": "module",

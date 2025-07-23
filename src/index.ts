@@ -1,255 +1,199 @@
-import type { WalletName } from '@solana/wallet-adapter-base';
+import type { WalletName } from "@solana/wallet-adapter-base";
 import {
-    BaseSignInMessageSignerWalletAdapter,
-    WalletConfigError,
-    WalletConnectionError,
-    WalletDisconnectionError,
-    WalletNotConnectedError,
-    WalletNotReadyError,
-    WalletPublicKeyError,
-    WalletReadyState,
-    WalletSignInError,
-    WalletSignMessageError,
-    BaseMessageSignerWalletAdapter,
-    isVersionedTransaction,
-    WalletSignTransactionError,
-    WalletSendTransactionError,
-    SendTransactionOptions,
-} from '@solana/wallet-adapter-base';
+  BaseSignInMessageSignerWalletAdapter,
+  WalletConfigError,
+  WalletConnectionError,
+  WalletDisconnectionError,
+  WalletNotConnectedError,
+  WalletNotReadyError,
+  WalletPublicKeyError,
+  WalletReadyState,
+  WalletSignInError,
+  WalletSignMessageError,
+  BaseMessageSignerWalletAdapter,
+  isVersionedTransaction,
+  WalletSignTransactionError,
+  WalletSendTransactionError,
+  SendTransactionOptions,
+} from "@solana/wallet-adapter-base";
 import {
-    PublicKey,
-    Transaction,
-    TransactionVersion,
-    Connection,
-    TransactionSignature,
-    VersionedTransaction,
-} from '@solana/web3.js';
-import { TalkenEmbed } from './talkenEmbed';
+  PublicKey,
+  Transaction,
+  TransactionVersion,
+  Connection,
+  TransactionSignature,
+  VersionedTransaction,
+} from "@solana/web3.js";
+import { TalkenEmbed } from "./talkenEmbed";
 
-// import type { SolanaSignInInput, SolanaSignInOutput } from '@solana/wallet-standard-features';
+export const TalkenWalletName = "Talken" as WalletName<"Talken">;
 
-// interface TalkenWindow extends Window {}
-// declare const window: TalkenWindow;
-// export type CustomSolanaSignInInput = SolanaSignInInput | (() => Promise<SolanaSignInInput>);
-// type ConnectOutput = { siwsOutput?: SolanaSignInOutput };
-
-export const TalkenWalletName = 'Talken Wallet' as WalletName<'Talken'>;
-
-// export class TalkenWalletAdapter extends BaseSignInMessageSignerWalletAdapter {
 export class TalkenWalletAdapter extends BaseMessageSignerWalletAdapter {
-    name = TalkenWalletName;
-    url = 'https://wallet.talken.io';
-    icon = `data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAyNCIgaGVpZ2h0PSIxMDI0IiB2aWV3Qm94PSIwIDAgMTAyNCAxMDI0IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cmVjdCB3aWR0aD0iMTAyNCIgaGVpZ2h0PSIxMDI0IiBmaWxsPSJ1cmwoI3BhaW50MF9saW5lYXJfMTQ1NF8xMjQ5MjIpIi8+CjxwYXRoIGQ9Ik0zODYuNzc3IDc3MS4zNjhWODExLjQ3OEMzODYuNzc3IDgzNi43NjEgMzc1LjE4OCA4NDYuMzYxIDM0OC45NjggODQ2LjM2MUgzMjQuMDgxQzI5NC4zMTIgODQ2LjM2MSAyNzYuMTQ2IDgzOC40NzIgMjc2LjE0NiA4MDkuODk3QzI3Ni4xNDYgNzgxLjIxNCAyOTQuNDQzIDc3My4zMTEgMzI0LjA4MSA3NzMuMzExSDM1Mi44NjhWNzcxLjM2OEMzNTIuODY4IDc1Ny45OTcgMzQ1LjA1NSA3NTIuMTUzIDMyNy4yNTMgNzUyLjE1M0MzMTguNDcyIDc1Mi4xNTMgMzA5LjkyNCA3NTMuNjExIDI5OC41ODIgNzU1LjkzMUMyOTAuOTA3IDc1Ny4zODggMjg2LjI3MyA3NTMuODY0IDI4Ni4yNzMgNzQ2LjA3N1Y3NDEuNTgyQzI4Ni4yNzMgNzM0Ljg5NiAyOTAuMDQxIDczMC41MjUgMjk3Ljk3MSA3MjguOTQzQzMxMS4yNjMgNzI2LjE0NSAzMjEuMzk3IDcyNC40NDggMzMyLjEyNyA3MjQuNDQ4QzM2NS4xNzcgNzI0LjQ0OCAzODYuNzc3IDczOC42NjYgMzg2Ljc3NyA3NzEuMzY4Wk0zNTIuODY4IDgwOS43NzRWNzk3LjQ5OUgzMjUuNzkxQzMxMS4wMyA3OTcuNDk5IDMwNy45NzQgODAwLjkwNyAzMDcuOTc0IDgwOS44OTdDMzA3Ljk3NCA4MTguNzcyIDMxMS4wMyA4MjIuMTggMzI1LjY2NyA4MjIuMThIMzQwLjY2OEMzNTEuMTY2IDgyMi4xOCAzNTIuODY4IDgxNy45MjQgMzUyLjg2OCA4MDkuNzc0WiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTY2NC40ODMgNzk3LjYyOUw2MTIuMTQ3IDgwMi45NzNDNjE2LjU0MSA4MTYuNTgyIDYyNi41MjIgODIxLjQ0NyA2NDIuNzUyIDgyMS40NDdDNjUwLjY3NSA4MjEuNDQ3IDY2MC4xODMgODIwLjg1MyA2NzAuNjc0IDgxOC4zMDFDNjc4LjYwNCA4MTYuNDczIDY4My4zNjEgODE5Ljg3NCA2ODMuMzYxIDgyNy43NzdWODMxLjQzMkM2ODMuMzYxIDgzNy45ODYgNjgwLjMwNiA4NDIuMjUgNjczLjg0NiA4NDMuOTQ2QzY2MC42NzggODQ3LjQ3NyA2NDkuMTY5IDg0OC41NTEgNjM3LjY4OSA4NDguNTUxQzYwMC43NCA4NDguNTUxIDU3Ni45MTQgODI4LjUwMyA1NzYuOTE0IDc4Ni42NzNDNTc2LjkxNCA3NDcuMTc5IDU5Ni45NTcgNzI0LjQ0OCA2MzcuOTM3IDcyNC40NDhDNjcyLjM0IDcyNC40NDggNjkxLjc3MSA3NDAuNzMzIDY5MS43NzEgNzcxLjExM0M2OTEuNzcxIDc4OC4xMzEgNjg2LjQzOSA3OTUuMzA5IDY2NC40ODMgNzk3LjYyOVpNNjU5LjcwMyA3NjcuOTU5QzY1OS43MDMgNzU2LjQxNiA2NTMuNTQ5IDc1MC4yMTcgNjM3LjkzNyA3NTAuMjE3QzYyMC45ODYgNzUwLjIxNyA2MTIuMTQ3IDc1Ny44NjcgNjEwLjMyMSA3NzguNDE1TDY1MS4yNzkgNzc0LjE1OUM2NTguMzU3IDc3My40MzQgNjU5LjcwMyA3NzIuMDkyIDY1OS43MDMgNzY3Ljk1OVoiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik00MzEuMTY3IDY4Mi42NThINDE3LjQ3NUM0MTEuNjU1IDY4Mi42NTggNDA2LjkzNCA2ODcuMzY0IDQwNi45MzQgNjkzLjE1N1Y4MzUuODVDNDA2LjkzNCA4NDEuNjU4IDQxMS42NTUgODQ2LjM1NyA0MTcuNDc1IDg0Ni4zNTdINDMxLjE2N0M0MzYuOTg3IDg0Ni4zNTcgNDQxLjcwMSA4NDEuNjU4IDQ0MS43MDEgODM1Ljg1VjY5My4xNTdDNDQxLjcwMSA2ODcuMzY0IDQzNi45ODcgNjgyLjY1OCA0MzEuMTY3IDY4Mi42NThaIiBmaWxsPSJ3aGl0ZSIvPgo8cGF0aCBkPSJNNTc1LjkyMiA4MzMuNTE2TDU3NS4yODIgODMyLjc5MUw1MzAuMjA2IDc4Mi40MzVMNTc0LjU2OSA3MzkuMjA2TDU3NC44NjggNzM4LjkwMkM1NzkuOCA3MzMuNjY3IDU3Ny43ODQgNzI4LjQwMyA1NzAuMzU3IDcyNy4xNDFDNTY5LjI1OSA3MjYuOTYgNTY4LjEwMiA3MjYuODY2IDU2Ni45MTYgNzI2Ljg2Nkg1NjYuNjQ3SDU1NC42MjFDNTQ5LjQzNCA3MjYuODczIDU0NC4wOCA3MjguODUyIDU0MC45MDEgNzMyLjA4Nkw1NDAuODA2IDczMi4xOTVMNDk2LjMzNCA3NzUuNTgzVjY5My4xNTdDNDk2LjMzNCA2ODcuMzY0IDQ5MS42MTIgNjgyLjY1OCA0ODUuOCA2ODIuNjU4SDQ3Mi4xMTVDNDY2LjI5NiA2ODIuNjU4IDQ2MS41NzQgNjg3LjM2NCA0NjEuNTc0IDY5My4xNTdWODM1Ljg1QzQ2MS41NzQgODQxLjY1OCA0NjYuMjk2IDg0Ni4zNTcgNDcyLjExNSA4NDYuMzU3SDQ4NS44QzQ5MS42MTIgODQ2LjM1NyA0OTYuMzM0IDg0MS42NTggNDk2LjMzNCA4MzUuODVWNzkwLjMzOEw1NDAuOTk1IDg0MC4yMjNMNTQxLjI5MyA4NDAuNTU2QzU0NC41MzggODQ0LjMxMiA1NTAuNjU2IDg0Ni41ODkgNTU2LjQwMyA4NDYuMzQyTDU1NS43NyA4NDYuMzU3SDU2Ny43ODlMNTY2Ljg1IDg0Ni4zNDJDNTY4LjQwNyA4NDYuNCA1NjkuOTIgODQ2LjMxNCA1NzEuMzMxIDg0Ni4wNDVDNTc4Ljc4MSA4NDQuNjUzIDU4MC44MjYgODM5LjA0OCA1NzUuOTIyIDgzMy41MTZaIiBmaWxsPSJ3aGl0ZSIvPgo8cGF0aCBkPSJNMjkzLjI4MiA2ODIuNjU4SDE3OC4zNzRDMTcyLjU2MSA2ODIuNjU4IDE2Ny44NCA2ODcuMzY0IDE2Ny44NCA2OTMuMTU3VjcwMi45MDlDMTY3Ljg0IDcwOC43MSAxNzIuNTYxIDcxMy40MTYgMTc4LjM3NCA3MTMuNDE2SDIxOC40NTlWODM1Ljg1QzIxOC40NTkgODQxLjY1OCAyMjMuMTgxIDg0Ni4zNTcgMjI5IDg0Ni4zNTdIMjQyLjY4NUMyNDguNDk3IDg0Ni4zNTcgMjUzLjIxOSA4NDEuNjU4IDI1My4yMTkgODM1Ljg1VjcxMy40MTZIMjkzLjI4MkMyOTkuMTAyIDcxMy40MTYgMzAzLjgxNiA3MDguNzEgMzAzLjgxNiA3MDIuOTA5VjY5My4xNTdDMzAzLjgxNiA2ODcuMzY0IDI5OS4xMDIgNjgyLjY1OCAyOTMuMjgyIDY4Mi42NThaIiBmaWxsPSJ3aGl0ZSIvPgo8cGF0aCBkPSJNODI1LjEyNCA3NzkuMTU0QzgyNS4xMjQgNzcxLjMxIDgyNC4xMjggNzYzLjY4OSA4MjIuMjIxIDc1Ni40MzhDODE4LjM3MyA3NDEuODQzIDgwNi4zODQgNzI5Ljk1OSA3OTEuNDI2IDcyNy4wMTVDNzgzLjExMSA3MjUuMzg0IDc3NC4zMTYgNzI0LjQ0OCA3NjUuNTEzIDcyNC40NDhDNzU2LjcxIDcyNC40NDggNzQ3Ljk3MyA3MjUuMzYyIDczOS42NTEgNzI3LjAwOEM3MjQuNzMgNzI5Ljk0NCA3MTIuNzMzIDc0MS43OTkgNzA4LjgzNCA3NTYuMzNDNzA2Ljg3NyA3NjMuNjA5IDcwNS45MDIgNzcxLjI3MyA3MDUuOTAyIDc3OS4xNTRWODM2LjExNkM3MDUuOTAyIDg0MS45MTcgNzEwLjYxNiA4NDYuNjE1IDcxNi40MzYgODQ2LjYxNUg3MzAuMTJDNzM1LjkzMyA4NDYuNjE1IDc0MC42NTUgODQxLjkxNyA3NDAuNjU1IDgzNi4xMTZWNzc5LjE1NEM3NDAuNjU1IDc3NC4xOCA3NDEuNDE4IDc2OS4zOCA3NDIuODMgNzY0Ljg3MUw3NDIuOTEgNzY0LjU4OEM3NDQuMjM0IDc2MC4zMzkgNzQ3LjUyMiA3NTYuOTYgNzUxLjcyIDc1NS40OTZMNzUyLjAxMSA3NTUuMzg3Qzc1Ni4zNjggNzUzLjkzNyA3NjAuNjYgNzUzLjE1NCA3NjUuNTEzIDc1My4xNTRDNzcwLjM5NCA3NTMuMTU0IDc3NC43MDkgNzUzLjk0NCA3NzkuMDg4IDc1NS40MTZMNzc5LjI4NCA3NTUuNDg4Qzc4My40NzUgNzU2LjkzOSA3ODYuNzYzIDc2MC4zMDMgNzg4LjA5NSA3NjQuNTNMNzg4LjE5NiA3NjQuODcxQzc4OS42MDggNzY5LjM4IDc5MC4zNjQgNzc0LjE4IDc5MC4zNjQgNzc5LjE1NFY4MzYuMTE2Qzc5MC4zNjQgODQxLjkxNyA3OTUuMDc4IDg0Ni42MTUgODAwLjg5OCA4NDYuNjE1SDgxNC41ODNDODIwLjQxIDg0Ni42MTUgODI1LjExNyA4NDEuOTE3IDgyNS4xMTcgODM2LjExNkw4MjUuMTI0IDc3OS4xNTRaIiBmaWxsPSJ3aGl0ZSIvPgo8cGF0aCBkPSJNODU2LjE2MSA2OTQuNzU5Qzg1Ni4xNjEgNzA3LjAyNyA4NDYuMTg3IDcxNi45NjggODMzLjg4NSA3MTYuOTY4QzgyMS41ODMgNzE2Ljk2OCA4MTEuNjAyIDcwNy4wMjcgODExLjYwMiA2OTQuNzU5QzgxMS42MDIgNjgyLjQ5IDgyMS41ODMgNjcyLjU1IDgzMy44ODUgNjcyLjU1Qzg0Ni4xODcgNjcyLjU1IDg1Ni4xNjEgNjgyLjQ5IDg1Ni4xNjEgNjk0Ljc1OVoiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik01MzUuNjk5IDI0Ny44NzdMNTA2LjE2MiAyNTUuNzkxTDQ4Ni4xMTMgMTgwLjk2NkM0ODQuNjg5IDE3NS42NSA0NzkuMjc3IDE3NC4zNTYgNDc2LjEyNiAxNzUuMkM0NzUuMTQyIDE3NS40NjQgNDc0LjIxIDE3NS45MjUgNDczLjMzMSAxNzYuNTgzTDMzMi45NTkgMjc3LjI5OEMzMjMuNTc4IDI4NC4wMzIgMzE5LjUyMSAyOTUuNjcyIDMyMi41MjggMzA2Ljg5NUwzMjYuMDYzIDMyMC4wODhDMzExLjczMyAzMzguMjc5IDMwNS44NjYgMzYyLjg1NSAzMTIuMzU2IDM4Ny4wNzVMMjkyLjk5MiAzMTQuODFDMjg2LjcxNCAyOTEuMzc3IDI5NS40OTUgMjY2LjY1NCAzMTUuMTM2IDI1Mi41MjdMNDU1LjY1MiAxNTEuNTYyQzQ1OS41NjIgMTQ4LjgyNiA0NjMuODggMTQ2LjgyNSA0NjguMjEyIDE0NS42NjRDNDg3LjkwMyAxNDAuMzg4IDUwOS44OTggMTUxLjU4OSA1MTUuNjQ5IDE3My4wNTJMNTM1LjY5OSAyNDcuODc3WiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTcwNy41NTMgMzY1LjM3NkM3MDguOTc4IDM3MC42OTMgNzA2LjAwMyAzNzYuMTMzIDcwMC41NDMgMzc3LjgwN0w2NzEuNzk0IDM4NS41MUM2NjEuMzU4IDM4OC4zMDYgNjQ5Ljg0OSAzODMuMTU5IDY0Ni4zMTggMzczLjEzMUM2NDQuMDkxIDM2Ny4xODUgNjQ0LjkyNCAzNjAuODQyIDY0Ny44MDcgMzU1Ljg0OUM2NTAuMzQ5IDM1MS4xNTggNjU0Ljc0NCAzNDcuODY5IDY2MC4wNiAzNDYuNDQ1TDY4OS43OTQgMzM4LjQ3OEM2OTUuNTU3IDMzNy4xNDUgNzAwLjg1MiAzNDAuMzY5IDcwMi4yNzcgMzQ1LjY4NUw3MDcuNTUzIDM2NS4zNzZaIiBmaWxsPSJ3aGl0ZSIvPgo8cGF0aCBmaWxsLXJ1bGU9ImV2ZW5vZGQiIGNsaXAtcnVsZT0iZXZlbm9kZCIgZD0iTTY3NC4zODUgMzIwLjQ2NUM2ODUuMjE1IDMxNy41NjMgNjkxLjcwMiAzMDYuMzI4IDY4OC44IDI5NS40OThMNjg2LjQ3OCAyODYuODM0QzY3NS41NTYgMjQ2LjA3NSA2MzMuMzYyIDIyMS43MTQgNTkyLjYwMiAyMzIuNjM2TDM2Ni41NTMgMjkzLjIwN0MzNDkuODE2IDI5Ny42OTEgMzM1LjkzNCAzMDcuMzIgMzI2LjA2MiAzMjAuMDk2QzMxMS43MzEgMzM4LjI4NyAzMDUuODY0IDM2Mi44NjMgMzEyLjM1NCAzODcuMDgyTDM0Ny44NjMgNTE5LjYwMUMzNTguNzg1IDU2MC4zNiA0MDAuOTc5IDU4NC43MjEgNDQxLjczOSA1NzMuNzk5TDY2Ny43ODggNTEzLjIyOEM3MDguNTQ4IDUwMi4zMDcgNzMyLjkwOSA0NjAuMTEzIDcyMS45ODcgNDE5LjM1M0w3MjAuOTg0IDQxNS42MTJDNzE4LjA4MyA0MDQuNzgyIDcwNi44NDcgMzk4LjI5NSA2OTYuMDE4IDQwMS4xOTdMNjc4Ljg4NyA0MDUuNzg3QzY1OS45ODMgNDEwLjg1MyA2MzguNzU1IDQwNC4wODkgNjI4LjkyNiAzODcuMDk2QzYyMC43ODEgMzczLjIzOSA2MjEuODUyIDM1Ny41NDYgNjI5LjExMiAzNDUuMjU5QzYzNC4zOTIgMzM1LjgyNSA2NDMuMjc0IDMyOC44MDIgNjU0LjMwMSAzMjUuODQ3TDY3NC4zODUgMzIwLjQ2NVpNNDA3LjUwNSAzODcuNzU2QzM5OS40MzIgMzg5LjkxOSAzOTAuOTQzIDM4NS4wMTggMzg4Ljc4IDM3Ni45NDVDMzg2LjYxNiAzNjguODcyIDM5MS41MTcgMzYwLjM4MyAzOTkuNTkxIDM1OC4yMkw1MzcuNDI2IDMyMS4yODZDNTQ1LjQ5OSAzMTkuMTIzIDU1My45ODggMzI0LjAyNCA1NTYuMTUxIDMzMi4wOTdDNTU4LjMxNCAzNDAuMTcgNTUzLjQxMyAzNDguNjU5IDU0NS4zNCAzNTAuODIyTDQwNy41MDUgMzg3Ljc1NloiIGZpbGw9IndoaXRlIi8+CjxkZWZzPgo8bGluZWFyR3JhZGllbnQgaWQ9InBhaW50MF9saW5lYXJfMTQ1NF8xMjQ5MjIiIHgxPSI1MTIiIHkxPSIwIiB4Mj0iNTEyIiB5Mj0iMTAyNCIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPgo8c3RvcCBzdG9wLWNvbG9yPSIjMjUzQjg0Ii8+CjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzE5Mjg2MiIvPgo8L2xpbmVhckdyYWRpZW50Pgo8L2RlZnM+Cjwvc3ZnPgo=`
-    readonly supportedTransactionVersions = new Set(['legacy' as TransactionVersion, 0 as TransactionVersion]);
+  name = TalkenWalletName;
+  url = "https://wallet.talken.io";
+  icon = `data:image/svg+xml,%3Csvg width='1025' height='1024' viewBox='0 0 1025 1024' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='0.015625' width='1024' height='1024' rx='200' fill='url(%23paint0_linear_2205_70745)'/%3E%3Cpath d='M576.767 321.615L517.87 337.398L477.892 188.18C475.053 177.578 464.261 174.998 457.978 176.681C456.016 177.207 454.158 178.127 452.405 179.439L172.503 380.287C153.798 393.717 145.708 416.929 151.704 439.31L158.753 465.62C130.179 501.897 118.48 550.907 131.421 599.208L92.809 455.095C80.2907 408.364 97.7999 359.061 136.964 330.888L417.153 129.541C424.95 124.085 433.56 120.095 442.198 117.779C481.462 107.258 525.32 129.595 536.787 172.397L576.767 321.615Z' fill='white'/%3E%3Cpath d='M901.229 487.953C904.07 498.557 898.138 509.405 887.251 512.743L829.926 528.105C809.116 533.681 786.167 523.417 779.126 503.418C774.686 491.561 776.347 478.911 782.096 468.954C787.164 459.599 795.928 453.04 806.528 450.2L865.818 434.312C877.309 431.654 887.867 438.084 890.709 448.685L901.229 487.953Z' fill='white'/%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M835.092 398.388C856.687 392.601 869.622 370.196 863.835 348.598L859.205 331.32C837.427 250.038 753.292 201.456 672.016 223.237L221.275 344.029C187.901 352.972 160.22 372.174 140.536 397.652C111.96 433.929 100.261 482.939 113.202 531.238L184.007 795.511C205.785 876.793 289.92 925.375 371.196 903.594L821.937 782.801C903.213 761.022 951.789 676.878 930.01 595.593L928.01 588.133C922.226 566.535 899.821 553.599 878.228 559.386L844.069 568.54C806.374 578.642 764.046 565.153 744.447 531.266C728.206 503.631 730.341 472.336 744.817 447.833C755.346 429.019 773.057 415.014 795.044 409.121L835.092 398.388Z' fill='white'/%3E%3Cpath d='M464.287 573.287L475.718 615.952C482.923 642.846 473.333 656.36 445.446 663.833L418.977 670.927C387.315 679.411 365.746 676.197 357.602 645.802C349.428 615.292 366.636 601.671 398.158 593.223L428.776 585.019L428.222 582.952C424.411 568.729 414.436 564.74 395.502 569.814C386.163 572.316 377.487 576.304 366.085 582.004C358.338 585.741 352.405 583.314 350.185 575.031L348.904 570.249C346.999 563.137 349.761 557.414 357.744 553.471C371.084 546.706 381.379 542.013 392.791 538.955C427.942 529.535 454.967 538.502 464.287 573.287ZM439.167 623.804L435.669 610.747L406.87 618.465C391.171 622.672 388.892 627.168 391.454 636.731C393.983 646.171 398.205 648.925 413.772 644.753L429.727 640.478C440.892 637.486 441.49 632.473 439.167 623.804Z' fill='url(%23paint1_linear_2205_70745)'/%3E%3Cpath d='M486.218 466.273L471.656 470.175C465.466 471.834 461.786 478.185 463.436 484.347L504.102 636.13C505.757 642.308 512.117 645.961 518.307 644.302L532.87 640.399C539.06 638.741 542.734 632.399 541.079 626.221L500.414 474.438C498.763 468.276 492.408 464.614 486.218 466.273Z' fill='url(%23paint2_linear_2205_70745)'/%3E%3Cpath d='M683.167 585.484L682.28 584.895L619.987 544.179L654.851 485.552L655.083 485.143C658.836 478.169 655.192 473.144 646.933 473.919C645.714 474.039 644.456 474.269 643.195 474.607L642.909 474.684L630.118 478.111C624.603 479.597 619.473 483.228 617.014 487.574L616.944 487.717L582.009 546.544L558.519 458.868C556.868 452.706 550.505 449.046 544.323 450.703L529.768 454.603C523.579 456.262 519.898 462.613 521.549 468.775L562.214 620.558C563.87 626.736 570.231 630.388 576.42 628.73L590.975 624.829C597.156 623.173 600.84 616.828 599.184 610.65L586.214 562.239L647.931 602.573L648.343 602.842C652.865 605.912 660.02 606.591 666.062 604.69L665.393 604.886L678.177 601.461L677.174 601.712C678.846 601.33 680.431 600.808 681.855 600.119C689.382 596.515 689.96 589.97 683.167 585.484Z' fill='url(%23paint3_linear_2205_70745)'/%3E%3Cpath d='M339.565 505.573L217.352 538.324C211.169 539.981 207.489 546.332 209.14 552.494L211.919 562.867C213.572 569.038 219.935 572.698 226.117 571.041L268.751 559.616L303.643 689.849C305.298 696.027 311.659 699.679 317.848 698.021L332.403 694.121C338.585 692.464 342.268 686.12 340.613 679.942L305.721 549.709L348.331 538.29C354.521 536.631 358.193 530.282 356.54 524.112L353.761 513.738C352.11 507.576 345.755 503.914 339.565 505.573Z' fill='url(%23paint4_linear_2205_70745)'/%3E%3Cpath d='M694.583 424.234C698.079 437.284 690.304 450.701 677.22 454.207C664.136 457.713 650.687 449.984 647.191 436.934C643.695 423.884 651.478 410.466 664.562 406.959C677.646 403.453 691.087 411.184 694.583 424.234Z' fill='url(%23paint5_linear_2205_70745)'/%3E%3Cdefs%3E%3ClinearGradient id='paint0_linear_2205_70745' x1='512.016' y1='0' x2='512.016' y2='1024' gradientUnits='userSpaceOnUse'%3E%3Cstop stop-color='%23253B84'/%3E%3Cstop offset='1' stop-color='%23192862'/%3E%3C/linearGradient%3E%3ClinearGradient id='paint1_linear_2205_70745' x1='392.083' y1='539.144' x2='426.834' y2='668.821' gradientUnits='userSpaceOnUse'%3E%3Cstop stop-color='%23253B84'/%3E%3Cstop offset='1' stop-color='%23192862'/%3E%3C/linearGradient%3E%3ClinearGradient id='paint2_linear_2205_70745' x1='478.933' y1='468.225' x2='525.595' y2='642.349' gradientUnits='userSpaceOnUse'%3E%3Cstop stop-color='%23253B84'/%3E%3Cstop offset='1' stop-color='%23192862'/%3E%3C/linearGradient%3E%3ClinearGradient id='paint3_linear_2205_70745' x1='580.785' y1='440.932' x2='627.447' y2='615.059' gradientUnits='userSpaceOnUse'%3E%3Cstop stop-color='%23253B84'/%3E%3Cstop offset='1' stop-color='%23192862'/%3E%3C/linearGradient%3E%3ClinearGradient id='paint4_linear_2205_70745' x1='278.458' y1='521.948' x2='325.12' y2='696.072' gradientUnits='userSpaceOnUse'%3E%3Cstop stop-color='%23253B84'/%3E%3Cstop offset='1' stop-color='%23192862'/%3E%3C/linearGradient%3E%3ClinearGradient id='paint5_linear_2205_70745' x1='664.558' y1='406.96' x2='677.219' y2='454.207' gradientUnits='userSpaceOnUse'%3E%3Cstop stop-color='%23253B84'/%3E%3Cstop offset='1' stop-color='%23192862'/%3E%3C/linearGradient%3E%3C/defs%3E%3C/svg%3E%0A`;
+  readonly supportedTransactionVersions = new Set(["legacy" as TransactionVersion, 0 as TransactionVersion]);
 
-    private _connecting: boolean;
-    private _wallet: TalkenEmbed | null;
-    private _position: string = 'top-right';
-    private _publicKey: PublicKey | null;
+  private _connecting: boolean;
+  private _wallet: TalkenEmbed | null;
+  private _position: string = "top-right";
+  private _publicKey: PublicKey | null;
 
-    private _readyState: WalletReadyState =
-        typeof window === 'undefined' || typeof document === 'undefined'
-            ? WalletReadyState.Unsupported
-            : WalletReadyState.Installed;
+  private _readyState: WalletReadyState =
+    typeof window === "undefined" || typeof document === "undefined"
+      ? WalletReadyState.Unsupported
+      : WalletReadyState.Installed;
 
-    constructor(config?: { position?: string; url?: string; }) {
-        super();
+  constructor(config?: { position?: string; url?: string }) {
+    super();
+    this._connecting = false;
+    this._wallet = null;
+    this._publicKey = null;
+    if (typeof window !== "undefined") window.addEventListener("message", this._handleMessage.bind(this));
+    if (config?.position) this._position = config.position;
+    if (config?.url) this.url = config.url;
+  }
+
+  get publicKey() {
+    return this._publicKey;
+  }
+
+  get connecting() {
+    return this._connecting;
+  }
+
+  get connected() {
+    return !!this._publicKey;
+  }
+
+  get readyState() {
+    return this._readyState;
+  }
+  async _handleMessage(event: MessageEvent) {
+    if (event.data && event.data.type === "talken") {
+      const { command } = event.data;
+      if (command === "disconnect") {
         this._connecting = false;
+        await this.disconnect();
+      }
+    }
+  }
+  async connect(): Promise<void> {
+    if (this.connected || this.connecting) return;
+    if (this._wallet) throw new WalletConnectionError("Already connected");
+    try {
+      this._wallet = new TalkenEmbed(this.url);
+      const publicKeyData: string = await this._wallet.sendCommand<string>("login", {
+        host: window.location.origin,
+      });
+
+      if (publicKeyData) {
+        let publicKey = new PublicKey(publicKeyData);
+        this._publicKey = publicKey;
+        this.emit("connect", publicKey);
+        if (this?._position) this._wallet.moveModal(this?._position);
+        else this._wallet.moveModal();
+      } else throw new WalletPublicKeyError("No response from Talken wallet.");
+    } catch (error) {
+      console.error("Error encountered during connection:", error);
+      throw new WalletConnectionError((error as Error).message);
+    } finally {
+      this._connecting = false;
+      console.log("Connected:", this._publicKey?.toString());
+    }
+  }
+
+  async disconnect(): Promise<void> {
+    if (this._wallet) {
+      try {
+        await this._wallet.disconnect();
         this._wallet = null;
         this._publicKey = null;
-        if (typeof window !== 'undefined') window.addEventListener('message', this._handleMessage.bind(this));
-        if (config?.position) this._position = config.position;
-        if (config?.url) this.url = config.url;
+        this._connecting = false;
+        window.removeEventListener("message", this._handleMessage.bind(this));
+        this.emit("disconnect");
+        console.log("Talken wallet disconnected.");
+      } catch (error) {
+        console.error("Error encountered during disconnection:", error);
+        throw new WalletDisconnectionError((error as Error).message);
+      } finally {
+        this._connecting = false;
+      }
     }
+  }
 
-    get publicKey() {
-        return this._publicKey;
+  async sendTransaction<T extends Transaction | VersionedTransaction>(
+    transaction: T,
+    connection: Connection,
+    options: SendTransactionOptions = {}
+  ): Promise<TransactionSignature> {
+    let signature: TransactionSignature;
+    if (!this._wallet) throw new WalletNotConnectedError();
+    try {
+      if (!isVersionedTransaction(transaction))
+        transaction = (await this.prepareTransaction(transaction, connection, options)) as T;
+      const signedTx = await this.signTransaction(transaction);
+      signature = await connection.sendRawTransaction(signedTx.serialize(), options);
+      return signature;
+    } catch (error) {
+      console.error("Error encountered during transaction submission:", error);
+      throw new WalletSendTransactionError((error as Error).message);
     }
+  }
 
-    get connecting() {
-        return this._connecting;
+  async signTransaction<T extends Transaction | VersionedTransaction>(transaction: T): Promise<T> {
+    if (!this._wallet) throw new WalletNotConnectedError();
+    if (isVersionedTransaction(transaction)) {
+      const data = transaction.serialize();
+      try {
+        const signedTransaction: any = await this._wallet.sendCommand<string>("signTransaction", {
+          transaction: data,
+          host: window.location.origin,
+          isVersionedTransaction: true,
+        });
+        const finalTransaction = VersionedTransaction.deserialize(signedTransaction) as T;
+        return finalTransaction;
+      } catch (error) {
+        console.error("Error encountered during transaction signing:", error);
+        throw new WalletSignTransactionError((error as Error).message);
+      }
+    } else {
+      try {
+        const data = transaction.serialize({ requireAllSignatures: false, verifySignatures: false }).toString("base64");
+        const signedTransaction: any = await this._wallet.sendCommand<string>("signTransaction", {
+          transaction: data,
+          host: window.location.origin,
+          isVersionedTransaction: false,
+        });
+        const finalTransaction = Transaction.from(Uint8Array.from(signedTransaction)) as T;
+        return finalTransaction;
+      } catch (error) {
+        console.error("Error encountered during transaction signing:", error);
+        throw new WalletSignTransactionError((error as Error).message);
+      }
     }
+  }
 
-    get connected() {
-        return !!this._publicKey;
+  async signAllTransactions<T extends Transaction | VersionedTransaction>(transactions: T[]): Promise<T[]> {
+    const signedTransactions: T[] = [];
+    for (const transaction of transactions) {
+      signedTransactions.push(await this.signTransaction(transaction));
     }
+    return signedTransactions;
+  }
 
-    get readyState() {
-        return this._readyState;
+  async signMessage(message: Uint8Array): Promise<Uint8Array> {
+    if (!this._wallet) throw new WalletNotConnectedError();
+    try {
+      const signedMessage: any = await this._wallet.sendCommand<string>("signMessage", {
+        host: window.location.origin,
+        message: message,
+      });
+      const Uint8ArraySignedMessage = Uint8Array.from(signedMessage);
+      return Uint8ArraySignedMessage;
+    } catch (error) {
+      console.error("Error encountered during message signature:", error);
+      throw new WalletSignMessageError((error as Error).message);
     }
-    async _handleMessage(event: MessageEvent) {
-        if (event.data && event.data.type === 'talken') {
-            const { command } = event.data;
-            if (command === 'disconnect') {
-                this._connecting = false;
-                await this.disconnect();
-            }
-        }
-    }
-    async connect(): Promise<void> {
-        if (this.connected || this.connecting) return;
-        if (this._wallet) throw new WalletConnectionError('Already connected');
-        try {
-            this._wallet = new TalkenEmbed(this.url);
-            const publicKeyData: string = await this._wallet.sendCommand<string>('login', {
-                host: window.location.origin,
-            });
-
-            if (publicKeyData) {
-                let publicKey = new PublicKey(publicKeyData);
-                this._publicKey = publicKey;
-                this.emit('connect', publicKey);
-                if (this?._position) this._wallet.moveModal(this?._position);
-                else this._wallet.moveModal();
-            } else throw new WalletPublicKeyError('No response from Talken wallet.');
-        } catch (error) {
-            console.error('Error encountered during connection:', error);
-            throw new WalletConnectionError((error as Error).message);
-        } finally {
-            this._connecting = false;
-            console.log('Connected:', this._publicKey?.toString());
-        }
-    }
-
-    async disconnect(): Promise<void> {
-        if (this._wallet) {
-            try {
-                await this._wallet.disconnect();
-                this._wallet = null;
-                this._publicKey = null;
-                this._connecting = false;
-                window.removeEventListener('message', this._handleMessage.bind(this));
-                this.emit('disconnect');
-                console.log('Talken wallet disconnected.');
-            } catch (error) {
-                console.error('Error encountered during disconnection:', error);
-                throw new WalletDisconnectionError((error as Error).message);
-            } finally {
-                this._connecting = false; // Ensure connecting is also reset
-            }
-        }
-    }
-
-    async sendTransaction<T extends Transaction | VersionedTransaction>(
-        transaction: T,
-        connection: Connection,
-        options: SendTransactionOptions = {}
-    ): Promise<TransactionSignature> {
-        let signature: TransactionSignature;
-        if (!this._wallet) throw new WalletNotConnectedError();
-        try {
-            if (!isVersionedTransaction(transaction))
-                transaction = (await this.prepareTransaction(transaction, connection, options)) as T;
-            const signedTx = await this.signTransaction(transaction);
-            signature = await connection.sendRawTransaction(signedTx.serialize(), options);
-            return signature;
-        } catch (error) {
-            console.error('Error encountered during transaction submission:', error);
-            throw new WalletSendTransactionError((error as Error).message);
-        }
-    }
-
-    async signTransaction<T extends Transaction | VersionedTransaction>(transaction: T): Promise<T> {
-        if (!this._wallet) throw new WalletNotConnectedError();
-        if (isVersionedTransaction(transaction)) {
-            const data = transaction.serialize();
-            try {
-                const signedTransaction: any = await this._wallet.sendCommand<string>('signTransaction', {
-                    transaction: data,
-                    host: window.location.origin,
-                    isVersionedTransaction: true,
-                });
-                const finalTransaction = VersionedTransaction.deserialize(signedTransaction) as T;
-                return finalTransaction;
-            } catch (error) {
-                console.error('Error encountered during transaction signing:', error);
-                throw new WalletSignTransactionError((error as Error).message);
-            }
-        } else {
-            try {
-                const data = transaction
-                    .serialize({ requireAllSignatures: false, verifySignatures: false })
-                    .toString('base64');
-                const signedTransaction: any = await this._wallet.sendCommand<string>('signTransaction', {
-                    transaction: data,
-                    host: window.location.origin,
-                    isVersionedTransaction: false,
-                });
-                const finalTransaction = Transaction.from(Uint8Array.from(signedTransaction)) as T;
-                return finalTransaction;
-            } catch (error) {
-                console.error('Error encountered during transaction signing:', error);
-                throw new WalletSignTransactionError((error as Error).message);
-            }
-        }
-    }
-
-    async signAllTransactions<T extends Transaction | VersionedTransaction>(transactions: T[]): Promise<T[]> {
-        const signedTransactions: T[] = [];
-        for (const transaction of transactions) {
-            signedTransactions.push(await this.signTransaction(transaction));
-        }
-        return signedTransactions;
-    }
-
-    async signMessage(message: Uint8Array): Promise<Uint8Array> {
-        if (!this._wallet) throw new WalletNotConnectedError();
-        try {
-            const signedMessage: any = await this._wallet.sendCommand<string>('signMessage', {
-                host: window.location.origin,
-                message: message,
-            });
-            const Uint8ArraySignedMessage = Uint8Array.from(signedMessage);
-            return Uint8ArraySignedMessage;
-        } catch (error) {
-            console.error('Error encountered during message signature:', error);
-            throw new WalletSignMessageError((error as Error).message);
-        }
-    }
-
-    // async signIn(input?: CustomSolanaSignInInput): Promise<SolanaSignInOutput> {
-    //     // console.log("triggering sign in!");
-    //     /* try {
-    //         if (!this.connected) {
-    //             const output = await this._connect({
-    //                 siwsInput: input,
-    //             });
-    //             const siwsOutput = output?.siwsOutput;
-    //             if (input) {
-    //                 if (!siwsOutput) {
-    //                     throw new Error("No Solana Sign In Output");
-    //                 }
-    //                 return siwsOutput;
-    //             }
-    //         }
-
-    //         const wallet = this._wallet;
-    //         if (!wallet || !this.connected) throw new WalletNotConnectedError();
-
-    //         const publicKey = this._publicKey;
-    //         if (!publicKey) throw new WalletNotConnectedError("no public key found");
-
-    //         try {
-    //             const siwsInput =
-    //                 typeof input === "function"
-    //                     ? input()
-    //                     : input
-    //                         ? Promise.resolve(input)
-    //                         : undefined;
-    //             const siwsOutput = null;
-
-    //             return siwsOutput;
-    //         } catch (error: any) {
-    //             throw new WalletSignInError(error?.message, error);
-    //         }
-    //     } catch (error: any) {
-    //         this.emit("error", error);
-    //         throw error;
-    //     }
-    // } */
-    //     // return an empty promise of SolanaSignInOutput
-    //     return new Promise((resolve, reject) => {
-    //         resolve({} as SolanaSignInOutput);
-    //     });
-    // }
+  }
 }
