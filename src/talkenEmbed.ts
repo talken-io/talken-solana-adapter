@@ -42,8 +42,7 @@ export class TalkenEmbed {
     iframe.style.overflow = "hidden";
     iframe.style.zIndex = "9998";
     iframe.style.border = "none";
-    iframe.sandbox.value =
-      "allow-scripts allow-same-origin allow-popups allow-modals allow-forms allow-top-navigation allow-popups-to-escape-sandbox allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-top-navigation";
+    iframe.sandbox.value = "allow-scripts allow-same-origin allow-popups allow-modals allow-forms allow-top-navigation allow-popups-to-escape-sandbox";
     iframe.allow = "clipboard-write; clipboard-read; microphone; camera";
     iframe.onload = () => {
       iframe.contentWindow?.postMessage(
@@ -73,7 +72,7 @@ export class TalkenEmbed {
           break;
         case "top-right":
           this.setPosition(this.iframe, "10px", "10px", "auto", "auto");
-          this.setPosition(this.minimizeButton, "10px", "10px", "auto", "auto");
+          this.setPosition(this.minimizeButton, "65px", "10px", "auto", "auto");
           break;
         case "bottom-left":
           this.setPosition(this.iframe, "auto", "auto", "10px", "10px");
@@ -132,7 +131,7 @@ export class TalkenEmbed {
           this.setPosition(this.minimizeButton, "10px", "auto", "10px", "auto");
           break;
         case "top-right":
-          this.setPosition(this.minimizeButton, "10px", "10px", "auto", "auto");
+          this.setPosition(this.minimizeButton, "65px", "10px", "auto", "auto");
           break;
         case "bottom-left":
           this.setPosition(this.minimizeButton, "auto", "auto", "10px", "10px");
@@ -197,7 +196,7 @@ export class TalkenEmbed {
         const midpoint = window.innerWidth / 2;
         const buttonCenter = imgButton.offsetLeft + imgButton.offsetWidth / 2;
         if (buttonCenter < midpoint) imgButton.style.left = "0px";
-        else imgButton.style.left = `${window.innerWidth - imgButton.offsetWidth - 10}px`;
+        else imgButton.style.left = `${window.innerWidth - imgButton.offsetWidth - 15}px`;
       }
     };
 
@@ -242,7 +241,7 @@ export class TalkenEmbed {
         const midpoint = window.innerWidth / 2;
         const buttonCenter = imgButton.offsetLeft + imgButton.offsetWidth / 2;
         if (buttonCenter < midpoint) imgButton.style.left = "0px";
-        else imgButton.style.left = `${window.innerWidth - imgButton.offsetWidth - 10}px`;
+        else imgButton.style.left = `${window.innerWidth - imgButton.offsetWidth - 15}px`;
       }
     });
 

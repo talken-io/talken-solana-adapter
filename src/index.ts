@@ -99,8 +99,8 @@ export class TalkenWalletAdapter extends BaseMessageSignerWalletAdapter {
       throw new WalletConnectionError((error as Error).message);
     } finally {
       this._connecting = false;
-      console.log("Connected:", this._publicKey?.toString());
-      window.parent.postMessage({ type: 'minimizeIframe' }, '*')
+      // console.log("Connected:", this._publicKey?.toString());
+      // window.parent.postMessage({ type: 'minimizeIframe' }, '*')
     }
   }
 

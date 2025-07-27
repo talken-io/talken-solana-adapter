@@ -69,7 +69,7 @@ var TalkenEmbed = class {
     iframe.style.overflow = "hidden";
     iframe.style.zIndex = "9998";
     iframe.style.border = "none";
-    iframe.sandbox.value = "allow-scripts allow-same-origin allow-popups allow-modals allow-forms allow-top-navigation allow-popups-to-escape-sandbox allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-top-navigation";
+    iframe.sandbox.value = "allow-scripts allow-same-origin allow-popups allow-modals allow-forms allow-top-navigation allow-popups-to-escape-sandbox";
     iframe.allow = "clipboard-write; clipboard-read; microphone; camera";
     iframe.onload = () => {
       var _a;
@@ -98,7 +98,7 @@ var TalkenEmbed = class {
           break;
         case "top-right":
           this.setPosition(this.iframe, "10px", "10px", "auto", "auto");
-          this.setPosition(this.minimizeButton, "10px", "10px", "auto", "auto");
+          this.setPosition(this.minimizeButton, "65px", "10px", "auto", "auto");
           break;
         case "bottom-left":
           this.setPosition(this.iframe, "auto", "auto", "10px", "10px");
@@ -157,7 +157,7 @@ var TalkenEmbed = class {
           this.setPosition(this.minimizeButton, "10px", "auto", "10px", "auto");
           break;
         case "top-right":
-          this.setPosition(this.minimizeButton, "10px", "10px", "auto", "auto");
+          this.setPosition(this.minimizeButton, "65px", "10px", "auto", "auto");
           break;
         case "bottom-left":
           this.setPosition(this.minimizeButton, "auto", "auto", "10px", "10px");
@@ -211,7 +211,7 @@ var TalkenEmbed = class {
         const midpoint = window.innerWidth / 2;
         const buttonCenter = imgButton.offsetLeft + imgButton.offsetWidth / 2;
         if (buttonCenter < midpoint) imgButton.style.left = "0px";
-        else imgButton.style.left = `${window.innerWidth - imgButton.offsetWidth - 10}px`;
+        else imgButton.style.left = `${window.innerWidth - imgButton.offsetWidth - 15}px`;
       }
     };
     imgButton.addEventListener("mousedown", (e) => {
@@ -251,7 +251,7 @@ var TalkenEmbed = class {
         const midpoint = window.innerWidth / 2;
         const buttonCenter = imgButton.offsetLeft + imgButton.offsetWidth / 2;
         if (buttonCenter < midpoint) imgButton.style.left = "0px";
-        else imgButton.style.left = `${window.innerWidth - imgButton.offsetWidth - 10}px`;
+        else imgButton.style.left = `${window.innerWidth - imgButton.offsetWidth - 15}px`;
       }
     });
     imgButton.addEventListener("click", (e) => {
@@ -397,7 +397,6 @@ var TalkenWalletAdapter = class extends BaseMessageSignerWalletAdapter {
   }
   connect() {
     return __async(this, null, function* () {
-      var _a;
       if (this.connected || this.connecting) return;
       if (this._wallet) throw new WalletConnectionError("Already connected");
       try {
@@ -417,8 +416,6 @@ var TalkenWalletAdapter = class extends BaseMessageSignerWalletAdapter {
         throw new WalletConnectionError(error.message);
       } finally {
         this._connecting = false;
-        console.log("Connected:", (_a = this._publicKey) == null ? void 0 : _a.toString());
-        window.parent.postMessage({ type: "minimizeIframe" }, "*");
       }
     });
   }
