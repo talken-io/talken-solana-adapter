@@ -69,7 +69,7 @@ var TalkenEmbed = class {
     iframe.style.overflow = "hidden";
     iframe.style.zIndex = "9998";
     iframe.style.border = "none";
-    iframe.sandbox.value = "allow-scripts allow-same-origin allow-popups allow-modals allow-forms allow-top-navigation allow-popups-to-escape-sandbox";
+    iframe.sandbox.value = "allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-modals allow-forms allow-top-navigation allow-popups-to-escape-sandbox";
     iframe.allow = "clipboard-write; clipboard-read; microphone; camera";
     iframe.onload = () => {
       var _a;
@@ -260,7 +260,18 @@ var TalkenEmbed = class {
     document.body.appendChild(imgButton);
     return imgButton;
   }
+  requestStorageAccess() {
+    return document.hasStorageAccess().then((hasAccess) => {
+      if (hasAccess) return Promise.resolve();
+      else return document.requestStorageAccess();
+    }).catch((reason) => {
+      console.log("Some promise have failed, reason=", reason);
+    });
+  }
   toggleIframe() {
+    this.requestStorageAccess().catch(() => {
+      console.log("Storage access request failed, but continuing...");
+    });
     if (this.iframe.style.display === "none") {
       this.iframe.style.display = "block";
       this.minimizeButton.style.display = "none";
