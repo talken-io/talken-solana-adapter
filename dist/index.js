@@ -52,6 +52,7 @@ var TalkenEmbed = class {
     this.iframe = this.createIframe();
     this.iframe.setAttribute("allowtransparency", "true");
     this.minimizeButton = this.createMinimizeButton();
+    this.moveModal("top-right");
   }
   isMobileDevice() {
     return window.matchMedia("(max-width: 767px)").matches;

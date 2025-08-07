@@ -23,6 +23,7 @@ export class TalkenEmbed {
     this.iframe = this.createIframe();
     this.iframe.setAttribute("allowtransparency", "true");
     this.minimizeButton = this.createMinimizeButton();
+    this.moveModal("top-right");
   }
 
   private isMobileDevice(): boolean {
